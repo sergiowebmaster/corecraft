@@ -34,9 +34,11 @@ function renderList(el, items, label){
 }
 
 async function refresh(){
-  const [health, state] = await Promise.all([
+  const [health, state, events, comparison] = await Promise.all([
     getJSON("/api/health"),
-    getJSON("/api/state")
+    getJSON("/api/state"),
+    getJSON("/api/events/latest"),
+    getJSON("/api/events/state-comparison")
   ]);
 
   const pill = document.getElementById("healthPill");
@@ -63,10 +65,10 @@ async function refresh(){
   document.getElementById("txCount").textContent = zmq.counters?.tx_events ?? "—";
 
   const warn = document.getElementById("divergenceWarn");
-  warn.style.display = (state.analysis?.bestblock_vs_last_seen_diverged) ? "block" : "none";
+  warn.style.display = (comparison.divergence) ? "block" : "none";
 
-  renderList(document.getElementById("blockList"), zmq.blocks || [], "hashblock");
-  renderList(document.getElementById("txList"), zmq.txs || [], "hashtx");
+  renderList(document.getElementById("blockList"), events.blocks || [], "hashblock");
+  renderList(document.getElementById("txList"), events.txs || [], "hashtx");
 
   document.getElementById("serverTime").textContent = `server_time: ${tsToLocal(state.server_time)}`;
 }

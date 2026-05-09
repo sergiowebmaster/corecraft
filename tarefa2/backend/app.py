@@ -15,7 +15,7 @@ BITCOIN_RPC_URL = os.getenv("BITCOIN_RPC_URL", "http://127.0.0.1:58443")
 BITCOIN_RPC_USER = os.getenv("BITCOIN_RPC_USER", "teste")
 BITCOIN_RPC_PASS = os.getenv("BITCOIN_RPC_PASS", "teste")
 
-ZMQ_HASHBLOCK = os.getenv("ZMQ_HASHBLOCK", "tcp://127.0.0.1:58335")
+ZMQ_HASHBLOCK = os.getenv("ZMQ_HASHBLOCK", "tcp://127.0.0.1:58334")
 ZMQ_HASHTX = os.getenv("ZMQ_HASHTX", "tcp://127.0.0.1:58332")
 
 MAX_BLOCK_EVENTS = int(os.getenv("MAX_BLOCK_EVENTS", "25"))
@@ -206,10 +206,58 @@ def state():
         "server_time": time.time()
     })
 
+@app.get("/api/events/summary")
+def api_events_summary():
+    with STATE.lock:
+        count_blocks = STATE.count_blocks
+        count_txs = STATE.count_txs
+        
+    return jsonify({
+        "blocks_observed": count_blocks,
+        "tx_observed": count_txs,
+        "last_event_time": 0,
+        "tx_per_second": 0
+    })
+
+@app.get("/api/events/latest")
+def api_events_latest():
+    with STATE.lock:
+        blocks = [asdict(ev) for ev in list(STATE.blocks)]
+        txs = [asdict(ev) for ev in list(STATE.txs)]
+        
+    return jsonify({
+        "blocks": blocks,
+        "txs": txs
+    })
+
+@app.get("/api/events/state-comparison")
+def api_events_state_comparison():
+    rpc_error = None
+    bestblockhash = None
+    divergence = None
+
+    try:
+        bestblockhash = rpc_call("getbestblockhash")
+    except Exception as e:
+        rpc_error = str(e)
+
+    with STATE.lock:
+        last_seen_blockhash = STATE.last_seen_blockhash
+
+    if bestblockhash and last_seen_blockhash:
+        divergence = (bestblockhash != last_seen_blockhash)
+    
+    return jsonify({
+        "best_block": bestblockhash,
+        "last_seen_block": last_seen_blockhash,
+        "divergence": divergence
+    })
+
+
 def main():
     start_zmq_threads()
     port = int(os.getenv("PORT", "8000"))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="127.0.0.1", port=port, debug=True)
 
 if __name__ == "__main__":
     main()
