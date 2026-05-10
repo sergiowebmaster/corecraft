@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Core Craft — TX Monitor</title>
+		<link rel="stylesheet" href="/style.css" />
+		<script type="text/javascript" src="/script.js" defer="defer"></script>
+	</head>
+	<body>
+		<div class="wrap">
+	    <header>
+	      <div class="brand">
+	        <div class="logo"></div>
+	        <div>
+	          <h1>Core Craft — TX Monitor</h1>
+	          <div class="subtitle">Do fluxo à ação: criação → broadcast → mempool → bloco</div>
+	        </div>
+	      </div>
+	      <div class="pill" title="Backend Flask rodando em 127.0.0.1:5000">
+	        <span class="dot" id="apiDot"></span>
+	        <span id="apiText">Conectando ao backend…</span>
+	      </div>
+	    </header>
+	
+	    <div class="grid">
+	      <!-- Card 1: Envio -->
+	      <section class="card">
+	        <div class="cardHeader">
+	          <h2>Enviar transação <span class="tag">Signet / Bitcoin Core RPC</span></h2>
+	          <span class="tag" id="lastStatusTag">status: —</span>
+	        </div>
+	
+	        <div class="cardBody">
+	          <div class="formRow">
+	            <div>
+	              <label for="carteiras">Carteira</label>
+	              <select id="carteiras" name="carteiras" onchange="selectWallet(this.value)">
+	              	<option value="">-- Escolha --</option>
+	              </select>
+	            </div>
+	            
+	            <div>
+	              <label for="address">Endereço destino</label>
+	              <input id="address" placeholder="tb1q..." autocomplete="off" />
+	            </div>
+	
+	            <div>
+	              <label for="amount">Valor (BTC)</label>
+	              <input id="amount" placeholder="0.00002" autocomplete="off" />
+	            </div>
+	
+	            <div style="display:flex; align-items:flex-end;">
+	              <button id="btnSend" onclick="sendTx()">Enviar</button>
+	            </div>
+	          </div>
+	
+	          <div class="hint">
+	            <span>Dica: o front está em <code>localhost:8000</code> e o backend em <code>127.0.0.1:5000</code></span>
+	            <span>Atualiza status automaticamente a cada <code>2s</code></span>
+	          </div>
+	
+	          <div class="toast" id="toast" style="display:none;">
+	            <div>
+	              <strong id="toastTitle">—</strong>
+	              <small id="toastBody">—</small>
+	            </div>
+	            <div class="right">
+	              <span class="badge b-broadcast" id="toastBadge">
+	                <span class="bDot"></span><span id="toastBadgeText">—</span>
+	              </span>
+	              <button class="ghost" onclick="hideToast()">Ok</button>
+	            </div>
+	          </div>
+	        </div>
+	      </section>
+	
+	      <!-- Card 2: Lista -->
+	      <section class="card">
+	        <div class="cardHeader">
+	          <h2>Transações enviadas</h2>
+	          <div style="display:flex; gap:8px; align-items:center;">
+	            <span class="tag" id="countTag">0 itens</span>
+	            <button class="ghost" onclick="clearHistory()">Limpar</button>
+	          </div>
+	        </div>
+	
+	        <div class="cardBody">
+	          <div id="list" class="list"></div>
+	          <div id="empty" class="empty">
+	            Nenhuma transação enviada ainda. Envie a primeira pelo card acima.
+	          </div>
+	
+	          <div class="footerNote">
+	            Cada envio cria um item local nesta lista. Agora o front também consulta <code>/tx/&lt;txid&gt;</code> para atualizar confirmações antigas.
+	          </div>
+	        </div>
+	      </section>
+	      
+	      <!-- Card 3: Carteira selecionada -->
+	      <section class="card">
+	        <div class="cardHeader">
+	          <h2>Carteira selecionada</h2>
+	        </div>
+	
+	        <div class="cardBody">
+	          <div class="formRow">
+	            <div>
+	            	Wallet:
+	            	<span id="nome-carteira">-</span>
+	            </div>
+	            <div>
+	            	Saldo:
+	            	<span id="saldo-carteira">0</span>
+	            </div>
+	            <div>
+	            	Número de UTXOs disponíveis:
+	            	<span id="utxos-disponiveis">0</span>
+	            </div>
+	          </div>
+	        </div>
+	    </div>
+	  </div>
+	</body>
+</html>

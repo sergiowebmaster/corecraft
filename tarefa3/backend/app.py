@@ -1,13 +1,22 @@
+'''
+Created on 7 de mai. de 2026
+
+@author: sergio
+'''
 # backend.py
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_from_directory
 
 from tx_builder import build_transaction
 from zmq_listener import start_zmq_listeners
 from state import state
 from rpc import BitcoinRPC
 
-app = Flask(__name__)
+import threading
+from builtins import list, len
+from distutils.log import info
+
+app = Flask(__name__, static_folder="../frontend", static_url_path="")
 
 rpc = BitcoinRPC(
     "http://127.0.0.1:58443",
@@ -15,14 +24,24 @@ rpc = BitcoinRPC(
     "teste"
 )
 
+class InMemoryState:
+    def __init__(self):
+        self.lock = threading.Lock()
+
+MEMORIA = InMemoryState()
+
 
 @app.route("/", methods=["GET"])
 def index():
-    """
-    Serve o frontend no próprio Flask.
-        http://127.0.0.1:5000/
-    """
-    return send_file("frontend.html")
+    return send_from_directory(app.static_folder, "index.html")
+
+@app.get("/style.css")
+def styles():
+    return send_from_directory(app.static_folder, "style.css")
+
+@app.get("/script.js")
+def js():
+    return send_from_directory(app.static_folder, "script.js")
 
 
 @app.route("/send", methods=["POST"])
@@ -150,6 +169,82 @@ def status():
     return jsonify(state)
 
 
+@app.route("/wallets", methods=["GET"])
+def wallets():
+    try:
+        wallets_disponiveis = rpc.call("listwalletdir")
+        wallets_carregadas = rpc.call("listwallets")
+    except Exception as e:
+        print("[/wallets confirm-check] erro:", e)
+         
+    return jsonify({
+        "available_wallets": wallets_disponiveis,
+        "loaded_wallets": wallets_carregadas,
+        "selected_wallet":"wallet1"
+    })
+    
+def desativar_carteiras():
+    for carteira in rpc.call("listwallets"):
+        rpc.call("unloadwallet", [carteira])
+            
+def ativar_carteira(carteira):
+    if carteira: rpc.call("loadwallet", [carteira])
+    
+def get_carteira_ativa():
+    wallet_carregada = ""
+    
+    try:
+        wallets_carregadas = rpc.call("listwallets")
+    except Exception as e:
+        print("[get_carteira_ativa() erro:", e)
+        
+    if wallets_carregadas:
+        wallet_carregada = wallets_carregadas[0]
+        
+    return wallet_carregada
+        
+    
+@app.route("/wallet/select", methods=["POST"])
+def wallet_select():
+    data = request.get_json(silent=True)
+    print("JSON parseado:", data)
+    
+    wallet_selecionada = data.get("wallet")
+    wallet_info = {}
+    
+    try:
+        desativar_carteiras();
+        ativar_carteira(wallet_selecionada)
+        if wallet_selecionada: wallet_info = rpc.call("getwalletinfo")
+    except Exception as e:
+        print("[/wallet/select confirm-check] erro:", e)
+        
+    return jsonify({
+        "selected_wallet": wallet_selecionada,
+        "wallet_info": wallet_info
+    })
+
+
+@app.route("/wallets/status", methods=["GET"])
+def wallets_status():
+    wallet_ativa = get_carteira_ativa()
+    balance = 0
+    utxos = 0
+    
+    if wallet_ativa:
+        try:
+            info = rpc.call("getwalletinfo")
+            balance = info.get("balance")
+        except Exception as e:
+            print("[/wallets/status confirm-check] erro:", e)
+        
+    return jsonify({
+        "wallet": wallet_ativa,
+        "balance": balance,
+        "utxos": utxos
+    })
+
 if __name__ == "__main__":
     start_zmq_listeners()
-    app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
+    app.run(host="127.0.0.1", port=5000, debug=True)
+    
