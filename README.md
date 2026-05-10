@@ -1,7 +1,7 @@
 # corecraft
 Atividades do curso Bitcoin Coders
 
-###bitcoin.conf
+### bitcoin.conf
 ```
 signet=1
 fallbackfee=0.0001
