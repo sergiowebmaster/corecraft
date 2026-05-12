@@ -16,12 +16,12 @@ class BitcoinRPC:
 
     def __init__(self):
         self.host = os.getenv("RPC_HOST", "127.0.0.1")
-        self.port = int(os.getenv("RPC_PORT", "18113"))
+        self.port = int(os.getenv("RPC_PORT", "58443"))
         self.wallet = os.getenv("RPC_WALLET", "").strip()  # opcional, ex: "minha_wallet"
         self.network = os.getenv("BTC_NETWORK", "main").strip()  # main, testnet, regtest, signet
 
-        self.user = os.getenv("RPC_USER")
-        self.password = os.getenv("RPC_PASS")
+        self.user = os.getenv("RPC_USER", "teste")
+        self.password = os.getenv("RPC_PASS", "teste")
 
         if not (self.user and self.password):
             self.user, self.password = self._read_cookie()

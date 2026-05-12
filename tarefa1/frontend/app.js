@@ -37,6 +37,14 @@ function hideError(el) {
   el.classList.add("hidden");
 }
 
+function preencherDados(dados)
+{
+	for(let id in dados)
+	{
+		document.getElementById(id).innerText = dados[id];
+	}
+}
+
 // ----------- handlers -----------
 
 async function refreshNode() {
@@ -48,6 +56,8 @@ async function refreshNode() {
 
   try {
     const data = await apiGet("/api/node");
+    const summary = await apiGet("/api/mempool/summary");
+    const lagInfo = await apiGet("/api/blockchain/lag");
 
     setKV(nodeEl, {
       chain: data.chain,
@@ -64,6 +74,17 @@ async function refreshNode() {
       maxmempool: data.mempool.maxmempool,
       mempoolminfee: data.mempool.mempoolminfee
     });
+    
+    let fee_distribution = summary.fee_distribution;
+    
+    preencherDados({
+		"total-txs": summary.tx_count,
+		"fee-media": summary.avg_fee_rate.toFixed(8),
+		"low-fees": fee_distribution.low,
+		"medium-fees": fee_distribution.medium,
+		"high-fees": fee_distribution.high,
+		"lag-headers-blocks": lagInfo.lag
+	});
 
   } catch (e) {
     showError(errEl, e.message);

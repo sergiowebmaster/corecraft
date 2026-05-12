@@ -1,6 +1,7 @@
 import os
 from flask import Flask, jsonify, request, send_from_directory
 from rpc import BitcoinRPC, BitcoinRPCError
+from numpy import double
 
 app = Flask(__name__)
 rpc = BitcoinRPC()
@@ -175,6 +176,80 @@ def frontend_js():
 @app.get("/styles.css")
 def frontend_css():
     return send_from_directory(FRONTEND_DIR, "styles.css")
+
+class FeeInfo:
+    min = None
+    max = None
+    avg = None
+    low = 0
+    medium = 0
+    high = 0
+    
+fee_info = FeeInfo
+
+def fee_info_calc(txs):
+    soma = 0
+    qtd = 0
+    
+    for tx in txs:
+        fee = txs[tx].get("fees").get("base")
+        soma += fee
+        qtd += 1
+        
+        if not fee_info.min or fee < fee_info.min:
+            fee_info.min = fee
+        
+        if not fee_info.max or fee > fee_info.max:
+            fee_info.max = fee
+            
+        if fee < 0.00001:
+            fee_info.low += 1 
+            
+        elif fee > 0.00005:
+            fee_info.high += 1
+        
+        else:
+            fee_info.medium += 1
+            
+    if qtd > 0: fee_info.avg = (soma / qtd)
+        
+
+@app.get("/api/mempool/summary")
+def api_mempool_summary():
+    try:
+        mempool_info = rpc.call("getmempoolinfo")
+        mempool_raw = rpc.call("getrawmempool", [True])
+        fee_info_calc(mempool_raw)
+    except Exception as e:
+        print("Erro /api/mempool/summary:", e)
+        
+    return ok({
+        "tx_count": mempool_info.get("size"),
+        "total_vsize": mempool_info.get("bytes"),
+        "avg_fee_rate": fee_info.avg,
+        "min_fee_rate": fee_info.min,
+        "max_fee_rate": fee_info.max,
+        "fee_distribution": {
+            "low": fee_info.low,
+            "medium": fee_info.medium,
+            "high": fee_info.high
+        }
+    })
+
+@app.get("/api/blockchain/lag")
+def api_blockchain_lag():
+    try:
+        blockchain_info = rpc.call("getblockchaininfo")
+        blocks = blockchain_info.get("blocks")
+        headers = blockchain_info.get("headers")
+    except Exception as e:
+        print("Erro /api/blockchain/lag:", e)
+    
+    return ok({
+        "blocks": blocks,
+        "headers": headers,
+        "lag": (headers - blocks)
+    })
 
 
 if __name__ == "__main__":

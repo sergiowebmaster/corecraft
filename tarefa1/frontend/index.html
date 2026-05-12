@@ -93,6 +93,49 @@
       </div>
     </section>
 
+    <section class="grid">
+      <div class="card">
+        <h2>Mempool Intelligence</h2>
+        <ul>
+        	<li>
+        		Total de transações:
+        		<span id="total-txs">-</span>
+        	</li>
+        	<li>
+        		Fee média:
+        		<span id="fee-media">-</span>
+        	</li>
+        </ul>
+        <table id="tabela-fees">
+        	<caption>Transações por nível de fee</caption>
+        	<thead>
+        		<tr>
+        			<th>Low</th>
+        			<th>Medium</th>
+        			<th>High</th>
+        		</tr>
+        	</thead>
+        	<tbody>
+        		<tr>
+        			<td><span id="low-fees">-</span></td>
+        			<td><span id="medium-fees">-</span></td>
+        			<td><span id="high-fees">-</span></td>
+        		</tr>
+        	</tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Node Sync Status</h2>
+        <ul>
+        	<li>
+        		Lag entre headers e blocks:
+        		<span id="lag-headers-blocks">-</span>
+        	</li>
+        </ul>
+      </div>
+    </section>
+
     <footer class="footer muted">
       Aula 1 — RPC como fotografia do estado
     </footer>
