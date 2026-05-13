@@ -15,6 +15,11 @@ from rpc import BitcoinRPC
 import threading
 from builtins import list, len
 from distutils.log import info
+from pip._vendor.rich import status
+from samba.dcerpc.echo import info2
+from samba.dcerpc.dfs import Info2
+import datetime
+import math
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="")
 
@@ -113,26 +118,41 @@ def tx_status(txid):
     Retorna o status de um txid específico sem depender de txindex,
     usando gettransaction da wallet.
     """
+    agora = datetime.datetime.now()
+    segundos_agora = agora.timestamp()
+     
     try:
         info = rpc.call("gettransaction", [txid])
         conf = int(info.get("confirmations", 0) or 0)
         bh = info.get("blockhash")
+        segundos_tx = info.get("time")
+        tempo_espera = int(segundos_agora - segundos_tx)
+        espera_minutos = math.floor(tempo_espera / 60)
+        
+        status = "mempool"
+        confirmed = False
+        block_hash = None
+        mensagem = "Transação aceita na mempool, aguardando inclusão em bloco."
+        aviso = ""
 
         if conf > 0 and bh:
-            return jsonify({
-                "txid": txid,
-                "status": "confirmed",
-                "confirmed": True,
-                "confirmations": conf,
-                "block_hash": bh
-            })
+            status = "confirmed"
+            confirmed = True
+            block_hash = bh
+            mensagem = ""
+        elif tempo_espera > 120:
+            aviso = f"Transação está na mempool há mais de {espera_minutos} minutos."
 
         return jsonify({
             "txid": txid,
-            "status": "mempool",
-            "confirmed": False,
+            "wallet": "wallet1",
+            "status": status,
+            "confirmed": confirmed,
             "confirmations": conf,
-            "block_hash": None
+            "block_hash": block_hash,
+            "age_seconds": tempo_espera,
+            "message": mensagem,
+            "warning": aviso
         })
 
     except Exception as e:
@@ -235,6 +255,8 @@ def wallets_status():
         try:
             info = rpc.call("getwalletinfo")
             balance = info.get("balance")
+            info2 = rpc.call("listunspent")
+            utxos = len(info2)
         except Exception as e:
             print("[/wallets/status confirm-check] erro:", e)
         

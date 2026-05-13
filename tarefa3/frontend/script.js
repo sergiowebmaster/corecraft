@@ -156,6 +156,8 @@ const API_BASE = "";
       const blockInfo = item.block_hash
         ? `<span class="mono txid">bloco: ${item.block_hash}</span>`
         : `<span class="mono">bloco: —</span>`;
+        
+      const aviso = item.warning;
 
       const el = document.createElement("div");
       el.className = "item";
@@ -178,6 +180,10 @@ const API_BASE = "";
             <span class="mono txid">txid: ${item.txid}</span>
             ${blockInfo}
           </div>
+
+          <div class="meta">
+          	${aviso}
+          </div>
         </div>
 
         <div class="actions">
@@ -199,10 +205,18 @@ const API_BASE = "";
 
     const idx = history.findIndex(x => x.txid === current);
     if(idx === -1) return;
+    
+    if(st.confirmed)
+    {
+		history[idx].message = "";
+    	history[idx].warning = "";
+	}
 
     history[idx].status = st.status || history[idx].status;
     history[idx].confirmed = !!st.confirmed;
     history[idx].block_hash = st.block_hash || history[idx].block_hash || null;
+    history[idx].message = history[idx].message || "";
+    history[idx].warning = history[idx].warning || "";
 
     saveHistory();
     render();
@@ -245,6 +259,20 @@ async function refreshPendingTxs(){
       if(st.block_hash){
         item.block_hash = st.block_hash;
       }
+
+      if(st.message){
+        item.message = st.message;
+      }
+
+      if(st.warning){
+        item.warning = st.warning;
+      }
+      
+      if(item.confirmed)
+      {
+		item.message = "";
+		item.warning = "";
+	  }
 
       changed = true;
 
